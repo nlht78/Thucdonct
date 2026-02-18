@@ -83,7 +83,7 @@ export default function ItemForm({ onAddItem }: ItemFormProps) {
             value={itemName}
             onChange={(e) => setItemName(e.target.value)}
             onKeyDown={handleKeyDown}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-900 ${
               errors.name
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:ring-blue-500'
@@ -106,7 +106,7 @@ export default function ItemForm({ onAddItem }: ItemFormProps) {
             value={itemPrice}
             onChange={(e) => setItemPrice(e.target.value)}
             onKeyDown={handleKeyDown}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-900 ${
               errors.price
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:ring-blue-500'
