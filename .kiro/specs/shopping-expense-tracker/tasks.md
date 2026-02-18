@@ -242,7 +242,7 @@ Triển khai ứng dụng web quản lý chi tiêu mua sắm bằng Next.js 14+ 
     - Test error handling
     - _Requirements: 3.1, 3.4, 3.5_
 
-- [~] 15. Checkpoint - Kiểm tra tất cả components
+- [ ] 15. Checkpoint - Kiểm tra tất cả components
   - Đảm bảo tất cả tests pass, hỏi user nếu có thắc mắc
 
 - [ ] 16. Implement main page
@@ -323,7 +323,7 @@ Triển khai ứng dụng web quản lý chi tiêu mua sắm bằng Next.js 14+ 
     - **Property 16: Chỉ user đã xác thực mới gọi được API**
     - **Validates: Requirements 7.2**
 
-- [~] 21. Checkpoint cuối - Kiểm tra toàn bộ hệ thống
+- [ ] 21. Checkpoint cuối - Kiểm tra toàn bộ hệ thống
   - Đảm bảo tất cả tests pass
   - Kiểm tra coverage >= 90%
   - Kiểm tra tất cả 17 properties đã có tests

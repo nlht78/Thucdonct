@@ -133,7 +133,7 @@ export default function Home() {
         <footer className="text-center text-gray-600 text-sm mt-12">
           <p>
             Dữ liệu được lưu tạm thời trên trình duyệt của bạn.
-            Nhấn "Lưu báo cáo" để lưu vào lịch sử.
+            Nhấn &quot;Lưu báo cáo&quot; để lưu vào lịch sử.
           </p>
         </footer>
       </div>
