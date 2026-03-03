@@ -39,12 +39,16 @@ export interface ShoppingSession {
  * Requirements: 3.1
  */
 export interface SaveReportRequest {
+  /** Tên người dùng */
+  userName: string;
   /** Danh sách món hàng */
   items: ShoppingItem[];
   /** Thời gian tạo báo cáo (ISO 8601) */
   timestamp: string;
   /** Tổng chi phí */
   totalAmount: number;
+  /** Loại báo cáo */
+  category: string;
   /** Có xuất PDF không */
   exportPDF: boolean;
 }
@@ -209,6 +213,12 @@ export interface SummaryProps {
 export interface SaveButtonProps {
   /** Danh sách món hàng cần lưu */
   items: ShoppingItem[];
+  /** Loại báo cáo */
+  category: string;
+  /** Chế độ chỉnh sửa */
+  isEditMode?: boolean;
+  /** Báo cáo gốc (khi chỉnh sửa) */
+  originalReport?: any;
   /** Callback khi lưu thành công */
   onSaveSuccess: () => void;
   /** Callback khi lưu thất bại */

@@ -14,14 +14,19 @@ interface SavedReport {
   }>;
   timestamp: string;
   totalAmount: number;
+  category?: string; // Thêm category
   sheetUrl?: string; // Optional - chỉ có khi tạo Google Sheets thành công
+}
+
+interface SavedReportsProps {
+  onEditReport: (report: SavedReport) => void;
 }
 
 /**
  * SavedReports Component
  * Hiển thị danh sách các báo cáo đã lưu
  */
-export default function SavedReports() {
+export default function SavedReports({ onEditReport }: SavedReportsProps) {
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -113,7 +118,14 @@ export default function SavedReports() {
                             {report.userName.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <span className="font-semibold text-gray-800">{report.userName}</span>
+                        <div>
+                          <span className="font-semibold text-gray-800">{report.userName}</span>
+                          {report.category && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {report.category}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-gray-500">
                         {formatDateTime(new Date(report.timestamp))}
@@ -160,19 +172,34 @@ export default function SavedReports() {
                     </span>
                   </div>
 
-                  {/* Link to Google Sheets */}
-                  {report.sheetUrl && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
+                  {/* Link to Google Sheets and Edit Button */}
+                  <div className="mt-3 pt-3 border-t border-gray-200 flex gap-2">
+                    <button
+                      onClick={() => {
+                        onEditReport(report);
+                        setIsOpen(false);
+                      }}
+                      className="flex-1 px-3 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors text-center flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Chỉnh sửa
+                    </button>
+                    {report.sheetUrl && (
                       <a
                         href={report.sheetUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors text-center"
+                        className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors text-center flex items-center justify-center gap-2"
                       >
-                        📊 Mở Google Sheets
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Mở Sheet
                       </a>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

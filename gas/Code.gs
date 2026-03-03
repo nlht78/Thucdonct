@@ -199,13 +199,24 @@ function createReport(data) {
     const scriptProperties = PropertiesService.getScriptProperties();
     const folderId = scriptProperties.getProperty('DRIVE_FOLDER_ID');
     
-    // Tạo tên file với userName và timestamp
+    // Tạo tên file với userName, category và timestamp
     const timestamp = new Date(data.timestamp);
-    const fileName = 'Báo Cáo - ' + data.userName + ' - ' + formatDateForFileName(timestamp);
+    const categoryText = data.category || 'Mua sắm';
+    const editPrefix = data.isEdit ? 'Chỉnh sửa - ' : '';
+    const fileName = editPrefix + 'Báo Cáo ' + categoryText + ' - ' + data.userName + ' - ' + formatDateForFileName(timestamp);
     
     // Tạo Spreadsheet mới cho mỗi báo cáo
     const spreadsheet = SpreadsheetApp.create(fileName);
     const spreadsheetId = spreadsheet.getId();
+    
+    // Chia sẻ file với quyền "Viewer" cho bất kỳ ai có link
+    try {
+      const file = DriveApp.getFileById(spreadsheetId);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      Logger.log('File shared with view-only access for anyone with link');
+    } catch (shareError) {
+      Logger.log('Warning: Could not set sharing permissions: ' + shareError.toString());
+    }
     
     // Di chuyển vào folder nếu có DRIVE_FOLDER_ID
     if (folderId) {
@@ -229,87 +240,148 @@ function createReport(data) {
     const sheet = spreadsheet.getSheets()[0];
     sheet.setName('Báo Cáo Chi Tiêu');
     
-    // Ghi header
-    sheet.getRange('A1:F1').merge();
-    sheet.getRange('A1').setValue('BÁO CÁO CHI TIÊU MUA SẮM')
-      .setFontWeight('bold')
-      .setHorizontalAlignment('center')
-      .setFontSize(14);
+    // Kiểm tra xem có phải báo cáo thức ăn không
+    const isFoodReport = categoryText.toLowerCase().includes('thức ăn') || categoryText.toLowerCase().includes('thuc an');
     
-    // Ghi thông tin người dùng và ngày giờ
-    sheet.getRange('A2:F2').merge();
-    sheet.getRange('A2').setValue('Người mua: ' + data.userName + ' | Ngày: ' + formatDateTime(timestamp))
-      .setFontStyle('italic')
-      .setHorizontalAlignment('center');
+    // Ghi header - merge theo số cột tương ứng
+    if (isFoodReport) {
+      sheet.getRange('A1:F1').merge();
+      sheet.getRange('A1').setValue('BÁO CÁO CHI TIÊU ' + categoryText.toUpperCase())
+        .setFontWeight('bold')
+        .setHorizontalAlignment('center')
+        .setFontSize(14);
+      
+      sheet.getRange('A2:F2').merge();
+      sheet.getRange('A2').setValue('Người mua: ' + data.userName + ' | Ngày: ' + formatDateTime(timestamp))
+        .setFontStyle('italic')
+        .setHorizontalAlignment('center');
+    } else {
+      sheet.getRange('A1:E1').merge();
+      sheet.getRange('A1').setValue('BÁO CÁO CHI TIÊU ' + categoryText.toUpperCase())
+        .setFontWeight('bold')
+        .setHorizontalAlignment('center')
+        .setFontSize(14);
+      
+      sheet.getRange('A2:E2').merge();
+      sheet.getRange('A2').setValue('Người mua: ' + data.userName + ' | Ngày: ' + formatDateTime(timestamp))
+        .setFontStyle('italic')
+        .setHorizontalAlignment('center');
+    }
     
     // Row 3 trống
     
-    // Ghi header bảng
-    const headerRange = sheet.getRange('A4:F4');
-    headerRange.setValues([['Buổi', 'Tên hàng', 'ĐVT', 'Số lượng', 'Giá lẻ', 'Thành tiền']]);
-    headerRange.setFontWeight('bold')
-      .setBackground('#e0e0e0')
-      .setHorizontalAlignment('center');
-    
-    // Ghi dữ liệu món hàng theo buổi
     let currentRow = 5;
     
-    // Buổi SÁNG (để trống)
-    sheet.getRange(currentRow, 1).setValue('SÁNG')
-      .setFontWeight('bold')
-      .setVerticalAlignment('top');
-    currentRow++;
-    
-    // Buổi TRƯA
-    const truaStartRow = currentRow;
-    sheet.getRange(currentRow, 1).setValue('Trưa')
-      .setFontWeight('bold')
-      .setVerticalAlignment('top');
-    
-    // Ghi các món hàng vào buổi Trưa
-    data.items.forEach((item, index) => {
-      sheet.getRange(currentRow, 2).setValue((index + 1) + '. ' + item.name);
-      sheet.getRange(currentRow, 3).setValue(''); // ĐVT - để trống
-      sheet.getRange(currentRow, 4).setValue(''); // Số lượng - để trống
-      sheet.getRange(currentRow, 5).setValue(''); // Giá lẻ - để trống
-      sheet.getRange(currentRow, 6).setValue(formatCurrency(item.price)); // Thành tiền
+    if (isFoodReport) {
+      // === LAYOUT CHO BÁO CÁO THỨC ĂN (CÓ CỘT BUỔI) ===
+      
+      // Ghi header bảng với cột Buổi
+      const headerRange = sheet.getRange('A4:F4');
+      headerRange.setValues([['Buổi', 'Tên hàng', 'ĐVT', 'Số lượng', 'Giá lẻ', 'Thành tiền']]);
+      headerRange.setFontWeight('bold')
+        .setBackground('#e0e0e0')
+        .setHorizontalAlignment('center');
+      
+      // Buổi SÁNG (để trống)
+      sheet.getRange(currentRow, 1).setValue('SÁNG')
+        .setFontWeight('bold')
+        .setVerticalAlignment('top');
       currentRow++;
-    });
-    
-    // Merge cell "Trưa" theo số món hàng
-    if (data.items.length > 0) {
-      sheet.getRange(truaStartRow, 1, data.items.length, 1).merge();
+      
+      // Buổi TRƯA
+      const truaStartRow = currentRow;
+      sheet.getRange(currentRow, 1).setValue('Trưa')
+        .setFontWeight('bold')
+        .setVerticalAlignment('top');
+      
+      // Ghi các món hàng vào buổi Trưa
+      data.items.forEach((item, index) => {
+        sheet.getRange(currentRow, 2).setValue((index + 1) + '. ' + item.name);
+        sheet.getRange(currentRow, 3).setValue(''); // ĐVT - để trống
+        sheet.getRange(currentRow, 4).setValue(''); // Số lượng - để trống
+        sheet.getRange(currentRow, 5).setValue(''); // Giá lẻ - để trống
+        sheet.getRange(currentRow, 6).setValue(formatCurrency(item.price)); // Thành tiền
+        currentRow++;
+      });
+      
+      // Merge cell "Trưa" theo số món hàng
+      if (data.items.length > 0) {
+        sheet.getRange(truaStartRow, 1, data.items.length, 1).merge();
+      }
+      
+      // Buổi CHIỀU (để trống)
+      sheet.getRange(currentRow, 1).setValue('Chiều')
+        .setFontWeight('bold')
+        .setVerticalAlignment('top');
+      currentRow++;
+      
+      // Ghi tổng cộng
+      sheet.getRange(currentRow, 1, 1, 5).merge();
+      sheet.getRange(currentRow, 1).setValue('Tổng tiền')
+        .setFontWeight('bold')
+        .setHorizontalAlignment('right');
+      sheet.getRange(currentRow, 6).setValue(formatCurrency(data.totalAmount))
+        .setFontWeight('bold')
+        .setFontColor('#ff0000');
+      
+      // Format borders cho bảng
+      const tableRange = sheet.getRange(4, 1, currentRow - 3, 6);
+      tableRange.setBorder(true, true, true, true, true, true);
+      
+      // Auto-resize columns
+      sheet.autoResizeColumns(1, 6);
+      
+      // Set column widths
+      sheet.setColumnWidth(1, 80);  // Buổi
+      sheet.setColumnWidth(2, 250); // Tên hàng
+      sheet.setColumnWidth(3, 60);  // ĐVT
+      sheet.setColumnWidth(4, 80);  // Số lượng
+      sheet.setColumnWidth(5, 100); // Giá lẻ
+      sheet.setColumnWidth(6, 120); // Thành tiền
+      
+    } else {
+      // === LAYOUT CHO BÁO CÁO KHÁC (KHÔNG CÓ CỘT BUỔI) ===
+      
+      // Ghi header bảng không có cột Buổi
+      const headerRange = sheet.getRange('A4:E4');
+      headerRange.setValues([['Tên hàng', 'ĐVT', 'Số lượng', 'Giá lẻ', 'Thành tiền']]);
+      headerRange.setFontWeight('bold')
+        .setBackground('#e0e0e0')
+        .setHorizontalAlignment('center');
+      
+      // Ghi các món hàng
+      data.items.forEach((item, index) => {
+        sheet.getRange(currentRow, 1).setValue((index + 1) + '. ' + item.name);
+        sheet.getRange(currentRow, 2).setValue(''); // ĐVT - để trống
+        sheet.getRange(currentRow, 3).setValue(''); // Số lượng - để trống
+        sheet.getRange(currentRow, 4).setValue(''); // Giá lẻ - để trống
+        sheet.getRange(currentRow, 5).setValue(formatCurrency(item.price)); // Thành tiền
+        currentRow++;
+      });
+      
+      // Ghi tổng cộng
+      sheet.getRange(currentRow, 1, 1, 4).merge();
+      sheet.getRange(currentRow, 1).setValue('Tổng tiền')
+        .setFontWeight('bold')
+        .setHorizontalAlignment('right');
+      sheet.getRange(currentRow, 5).setValue(formatCurrency(data.totalAmount))
+        .setFontWeight('bold')
+        .setFontColor('#ff0000');
+      
+      // Format borders cho bảng
+      const tableRange = sheet.getRange(4, 1, currentRow - 3, 5);
+      tableRange.setBorder(true, true, true, true, true, true);
+      
+      // Auto-resize columns
+      sheet.autoResizeColumns(1, 5);
+      
+      // Set column widths
+      sheet.setColumnWidth(1, 250); // Tên hàng
+      sheet.setColumnWidth(2, 60);  // ĐVT
+      sheet.setColumnWidth(3, 80);  // Số lượng
+      sheet.setColumnWidth(4, 100); // Giá lẻ
+      sheet.setColumnWidth(5, 120); // Thành tiền
     }
-    
-    // Buổi CHIỀU (để trống)
-    sheet.getRange(currentRow, 1).setValue('Chiều')
-      .setFontWeight('bold')
-      .setVerticalAlignment('top');
-    currentRow++;
-    
-    // Ghi tổng cộng
-    sheet.getRange(currentRow, 1, 1, 5).merge();
-    sheet.getRange(currentRow, 1).setValue('Tổng tiền')
-      .setFontWeight('bold')
-      .setHorizontalAlignment('right');
-    sheet.getRange(currentRow, 6).setValue(formatCurrency(data.totalAmount))
-      .setFontWeight('bold')
-      .setFontColor('#ff0000');
-    
-    // Format borders cho bảng
-    const tableRange = sheet.getRange(4, 1, currentRow - 3, 6);
-    tableRange.setBorder(true, true, true, true, true, true);
-    
-    // Auto-resize columns
-    sheet.autoResizeColumns(1, 6);
-    
-    // Set column widths
-    sheet.setColumnWidth(1, 80);  // Buổi
-    sheet.setColumnWidth(2, 250); // Tên hàng
-    sheet.setColumnWidth(3, 60);  // ĐVT
-    sheet.setColumnWidth(4, 80);  // Số lượng
-    sheet.setColumnWidth(5, 100); // Giá lẻ
-    sheet.setColumnWidth(6, 120); // Thành tiền
     
     return {
       success: true,

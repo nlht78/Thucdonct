@@ -8,7 +8,7 @@ import type { SaveButtonProps } from '@/types';
  * SaveButton Component
  * Nút lưu báo cáo (đã bỏ xác thực Google)
  */
-export default function SaveButton({ items, onSaveSuccess, onSaveError }: SaveButtonProps) {
+export default function SaveButton({ items, category, isEditMode = false, originalReport = null, onSaveSuccess, onSaveError }: SaveButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -52,8 +52,9 @@ export default function SaveButton({ items, onSaveSuccess, onSaveError }: SaveBu
       const reportData = {
         userName,
         items,
-        timestamp: new Date().toISOString(),
+        timestamp: isEditMode && originalReport ? originalReport.timestamp : new Date().toISOString(),
         totalAmount,
+        category: category || (isEditMode && originalReport ? originalReport.category : 'Mua sắm'),
       };
 
       // Lưu vào localStorage với key riêng cho lịch sử
@@ -65,12 +66,19 @@ export default function SaveButton({ items, onSaveSuccess, onSaveError }: SaveBu
       try {
         console.log('Đang gọi API để tạo Google Sheets...', reportData);
         
+        // Thêm flag isEdit để backend biết đây là chỉnh sửa
+        const apiData = {
+          ...reportData,
+          isEdit: isEditMode,
+          originalTimestamp: isEditMode && originalReport ? originalReport.timestamp : undefined,
+        };
+        
         const response = await fetch('/api/save-report', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(reportData),
+          body: JSON.stringify(apiData),
         });
 
         console.log('Response status:', response.status);
@@ -82,7 +90,12 @@ export default function SaveButton({ items, onSaveSuccess, onSaveError }: SaveBu
           reports[reports.length - 1].sheetUrl = result.sheetUrl;
           localStorage.setItem('savedReports', JSON.stringify(reports));
           
-          displayToast('Lưu báo cáo thành công! Đã tạo Google Sheets.', 'success');
+          displayToast(
+            isEditMode 
+              ? 'Lưu báo cáo chỉnh sửa thành công! Đã tạo Google Sheets mới.' 
+              : 'Lưu báo cáo thành công! Đã tạo Google Sheets.', 
+            'success'
+          );
         } else {
           // Vẫn lưu được vào localStorage
           console.warn('Không tạo được Google Sheets:', result.error || 'Unknown error');
@@ -165,7 +178,7 @@ export default function SaveButton({ items, onSaveSuccess, onSaveError }: SaveBu
                 d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
               />
             </svg>
-            <span>Lưu báo cáo</span>
+            <span>Lưu báo cáo{isEditMode ? ' (Chỉnh sửa)' : ''}</span>
           </>
         )}
       </button>

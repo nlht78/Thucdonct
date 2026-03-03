@@ -166,5 +166,6 @@ export function useShoppingItems() {
     deleteItem,
     clearAll,
     calculateTotal,
+    loadItems: setItems,
   };
 }
