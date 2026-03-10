@@ -219,6 +219,14 @@ export interface SaveButtonProps {
   isEditMode?: boolean;
   /** Báo cáo gốc (khi chỉnh sửa) */
   originalReport?: any;
+  /** Chế độ lưu: old (file riêng) hoặc new (file chung) */
+  saveMode?: 'old' | 'new';
+  /** Buổi (cho báo cáo mới) */
+  mealTime?: 'Sáng' | 'Trưa' | 'Chiều';
+  /** Số lượng người (cho báo cáo mới) */
+  peopleCount?: number;
+  /** Giá tiền chi cho mỗi người (cho báo cáo mới) */
+  pricePerPerson?: number;
   /** Callback khi lưu thành công */
   onSaveSuccess: () => void;
   /** Callback khi lưu thất bại */

@@ -8,7 +8,18 @@ import type { SaveButtonProps } from '@/types';
  * SaveButton Component
  * Nút lưu báo cáo (đã bỏ xác thực Google)
  */
-export default function SaveButton({ items, category, isEditMode = false, originalReport = null, onSaveSuccess, onSaveError }: SaveButtonProps) {
+export default function SaveButton({ 
+  items, 
+  category, 
+  isEditMode = false, 
+  originalReport = null, 
+  saveMode = 'old',
+  mealTime,
+  peopleCount,
+  pricePerPerson,
+  onSaveSuccess, 
+  onSaveError 
+}: SaveButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -55,6 +66,15 @@ export default function SaveButton({ items, category, isEditMode = false, origin
         timestamp: isEditMode && originalReport ? originalReport.timestamp : new Date().toISOString(),
         totalAmount,
         category: category || (isEditMode && originalReport ? originalReport.category : 'Mua sắm'),
+        saveMode, // Thêm saveMode
+        // Thêm dữ liệu cho báo cáo mới
+        ...(saveMode === 'new' && {
+          mealTime,
+          peopleCount: peopleCount || 0,
+          pricePerPerson: pricePerPerson || 0,
+          expectedTotal: (peopleCount || 0) * (pricePerPerson || 0),
+          difference: ((peopleCount || 0) * (pricePerPerson || 0)) - totalAmount,
+        }),
       };
 
       // Lưu vào localStorage với key riêng cho lịch sử

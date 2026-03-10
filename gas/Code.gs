@@ -65,7 +65,9 @@ function doGet(e) {
       }
       
       // Tạo báo cáo trên Google Sheets
-      const sheetResult = createReport(requestData);
+      const sheetResult = requestData.saveMode === 'new' 
+        ? createConsolidatedReport(requestData)
+        : createReport(requestData);
       
       if (!sheetResult.success) {
         return createJsonResponse({
@@ -152,7 +154,9 @@ function doPost(e) {
     }
     
     // Tạo báo cáo trên Google Sheets
-    const sheetResult = createReport(requestData);
+    const sheetResult = requestData.saveMode === 'new'
+      ? createConsolidatedReport(requestData)
+      : createReport(requestData);
     
     if (!sheetResult.success) {
       return createJsonResponse({
@@ -190,7 +194,7 @@ function doPost(e) {
 }
 
 /**
- * Tạo báo cáo trên Google Sheets
+ * Tạo báo cáo trên Google Sheets (cách cũ - tạo file riêng)
  * @param {Object} data - Dữ liệu báo cáo
  * @returns {Object} Result object với success, url, spreadsheetId, sheetId
  */
@@ -551,4 +555,137 @@ function createJsonResponse(data, statusCode) {
   }
   
   return output;
+}
+
+
+/**
+ * Tạo báo cáo vào file Google Sheets tổng hợp (cách mới)
+ * @param {Object} data - Dữ liệu báo cáo
+ * @returns {Object} Result object với success, url
+ */
+function createConsolidatedReport(data) {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const consolidatedSheetId = scriptProperties.getProperty('CONSOLIDATED_SHEET_ID');
+    
+    if (!consolidatedSheetId) {
+      return {
+        success: false,
+        error: 'CONSOLIDATED_SHEET_ID not configured in Script Properties'
+      };
+    }
+    
+    // Mở Spreadsheet tổng hợp
+    const spreadsheet = SpreadsheetApp.openById(consolidatedSheetId);
+    
+    // Xác định sheet dựa trên category
+    const category = data.category || 'Thức ăn';
+    let sheet;
+    let sheetName;
+    
+    if (category.toLowerCase().includes('thức ăn') || category.toLowerCase().includes('thuc an')) {
+      sheetName = 'thức ăn';
+    } else if (category.toLowerCase().includes('đồ dùng') || category.toLowerCase().includes('do dung')) {
+      sheetName = 'đồ dùng';
+    } else {
+      sheetName = 'vật liệu khác';
+    }
+    
+    // Tìm sheet theo tên
+    sheet = spreadsheet.getSheetByName(sheetName);
+    
+    // Nếu không tìm thấy, dùng sheet đầu tiên
+    if (!sheet) {
+      Logger.log('Sheet "' + sheetName + '" not found, using first sheet');
+      sheet = spreadsheet.getSheets()[0];
+    }
+    
+    // Tìm dòng cuối cùng có dữ liệu
+    const lastRow = sheet.getLastRow();
+    const nextRow = lastRow + 1;
+    
+    // Tính STT tự động
+    let stt = 1;
+    if (lastRow > 1) {
+      const lastSTT = sheet.getRange(lastRow, 1).getValue();
+      stt = (typeof lastSTT === 'number') ? lastSTT + 1 : lastRow;
+    }
+    
+    // Format timestamp
+    const timestamp = new Date(data.timestamp);
+    const dateStr = formatDateTime(timestamp);
+    
+    // Tạo danh sách tên hàng hóa
+    const itemsList = data.items.map((item, index) => 
+      (index + 1) + '. ' + item.name + ' (' + formatCurrency(item.price) + ')'
+    ).join(', ');
+    
+    // Tính toán các giá trị
+    const totalAmount = data.totalAmount;
+    
+    // Kiểm tra xem có phải sheet "thức ăn" không
+    if (sheetName === 'thức ăn') {
+      // Sheet thức ăn: 11 cột
+      const expectedTotal = data.peopleCount * data.pricePerPerson;
+      const difference = expectedTotal - totalAmount;
+      
+      // Ghi dữ liệu vào dòng mới
+      // Cột: STT | Ngày mua | Người mua | Buổi | Số lượng người | Giá tiền chi cho mỗi người | Tên hàng hóa | Thành tiền | Tổng tiền mua | Tiền dư/thiếu | Ghi chú
+      sheet.getRange(nextRow, 1).setValue(stt); // STT
+      sheet.getRange(nextRow, 2).setValue(dateStr); // Ngày mua
+      sheet.getRange(nextRow, 3).setValue(data.userName); // Người mua
+      sheet.getRange(nextRow, 4).setValue(data.mealTime || 'Trưa'); // Buổi
+      sheet.getRange(nextRow, 5).setValue(data.peopleCount || 0); // Số lượng người
+      sheet.getRange(nextRow, 6).setValue(data.pricePerPerson || 0); // Giá tiền chi cho mỗi người
+      sheet.getRange(nextRow, 7).setValue(itemsList); // Tên hàng hóa
+      sheet.getRange(nextRow, 8).setValue(totalAmount); // Thành tiền (tổng tiền mua thực tế)
+      sheet.getRange(nextRow, 9).setValue(expectedTotal); // Tổng tiền mua (SL người * giá chi mỗi người)
+      sheet.getRange(nextRow, 10).setValue(difference); // Tiền dư/thiếu
+      sheet.getRange(nextRow, 11).setValue(''); // Ghi chú (để trống)
+      
+      // Format số tiền
+      sheet.getRange(nextRow, 6).setNumberFormat('#,##0');
+      sheet.getRange(nextRow, 8).setNumberFormat('#,##0');
+      sheet.getRange(nextRow, 9).setNumberFormat('#,##0');
+      sheet.getRange(nextRow, 10).setNumberFormat('#,##0');
+      
+      // Format màu cho tiền dư/thiếu
+      if (difference > 0) {
+        sheet.getRange(nextRow, 10).setFontColor('#00aa00'); // Xanh lá nếu dư
+      } else if (difference < 0) {
+        sheet.getRange(nextRow, 10).setFontColor('#ff0000'); // Đỏ nếu thiếu
+      }
+      
+      // Add borders
+      sheet.getRange(nextRow, 1, 1, 11).setBorder(true, true, true, true, true, true);
+      
+    } else {
+      // Sheet đồ dùng hoặc vật liệu khác: 6 cột
+      // Cột: STT | Ngày mua | Người mua | Tên hàng hóa | Thành tiền | Ghi chú
+      sheet.getRange(nextRow, 1).setValue(stt); // STT
+      sheet.getRange(nextRow, 2).setValue(dateStr); // Ngày mua
+      sheet.getRange(nextRow, 3).setValue(data.userName); // Người mua
+      sheet.getRange(nextRow, 4).setValue(itemsList); // Tên hàng hóa
+      sheet.getRange(nextRow, 5).setValue(totalAmount); // Thành tiền
+      sheet.getRange(nextRow, 6).setValue(''); // Ghi chú (để trống)
+      
+      // Format số tiền
+      sheet.getRange(nextRow, 5).setNumberFormat('#,##0');
+      
+      // Add borders
+      sheet.getRange(nextRow, 1, 1, 6).setBorder(true, true, true, true, true, true);
+    }
+    
+    return {
+      success: true,
+      url: spreadsheet.getUrl() + '#gid=' + sheet.getSheetId()
+    };
+    
+  } catch (error) {
+    Logger.log('Error in createConsolidatedReport: ' + error.toString());
+    return {
+      success: false,
+      error: 'Failed to create consolidated report: ' + error.message
+    };
+  }
 }

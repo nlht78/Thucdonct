@@ -34,6 +34,14 @@ export default function Home() {
   // State cho chế độ chỉnh sửa
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingReport, setEditingReport] = useState<any>(null);
+  
+  // State cho chế độ lưu báo cáo (cũ/mới)
+  const [saveMode, setSaveMode] = useState<'old' | 'new'>('old');
+  
+  // State cho form báo cáo mới
+  const [mealTime, setMealTime] = useState<'Sáng' | 'Trưa' | 'Chiều'>('Trưa');
+  const [peopleCount, setPeopleCount] = useState<number>(1);
+  const [pricePerPerson, setPricePerPerson] = useState<number>(0);
 
   /**
    * Xử lý thay đổi category
@@ -160,6 +168,41 @@ export default function Home() {
           </div>
         </header>
 
+        {/* Toggle chọn chế độ lưu báo cáo */}
+        <div className="mb-6 bg-white rounded-lg shadow-md p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Chế độ lưu báo cáo
+          </label>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setSaveMode('old')}
+              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                saveMode === 'old'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <div className="text-left">
+                <div className="font-semibold">Báo cáo riêng lẻ</div>
+                <div className="text-xs opacity-80">Tạo file mới mỗi báo cáo</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setSaveMode('new')}
+              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                saveMode === 'new'
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <div className="text-left">
+                <div className="font-semibold">Báo cáo tổng hợp</div>
+                <div className="text-xs opacity-80">Lưu vào file chung</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Thông báo chế độ chỉnh sửa */}
         {isEditMode && (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -188,6 +231,84 @@ export default function Home() {
         {/* Form nhập món hàng */}
         <ItemForm onAddItem={handleAddItem} />
 
+        {/* Form bổ sung cho báo cáo mới */}
+        {saveMode === 'new' && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Thông tin bổ sung
+            </h3>
+            
+            {/* Chỉ hiện form đầy đủ cho "Thức ăn" */}
+            {category === 'Thức ăn' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Buổi */}
+                  <div>
+                    <label htmlFor="mealTime" className="block text-sm font-medium text-gray-700 mb-2">
+                      Buổi
+                    </label>
+                    <select
+                      id="mealTime"
+                      value={mealTime}
+                      onChange={(e) => setMealTime(e.target.value as 'Sáng' | 'Trưa' | 'Chiều')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    >
+                      <option value="Sáng">Sáng</option>
+                      <option value="Trưa">Trưa</option>
+                      <option value="Chiều">Chiều</option>
+                    </select>
+                  </div>
+
+                  {/* Số lượng người */}
+                  <div>
+                    <label htmlFor="peopleCount" className="block text-sm font-medium text-gray-700 mb-2">
+                      Số lượng người
+                    </label>
+                    <input
+                      id="peopleCount"
+                      type="number"
+                      min="1"
+                      value={peopleCount}
+                      onChange={(e) => setPeopleCount(parseInt(e.target.value) || 1)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    />
+                  </div>
+
+                  {/* Giá tiền chi cho mỗi người */}
+                  <div>
+                    <label htmlFor="pricePerPerson" className="block text-sm font-medium text-gray-700 mb-2">
+                      Giá/người (₫)
+                    </label>
+                    <input
+                      id="pricePerPerson"
+                      type="number"
+                      min="0"
+                      value={pricePerPerson}
+                      onChange={(e) => setPricePerPerson(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      placeholder="VD: 30000"
+                    />
+                  </div>
+                </div>
+
+                {/* Hiển thị tổng tiền dự kiến */}
+                {peopleCount > 0 && pricePerPerson > 0 && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      Tổng tiền dự kiến: <span className="font-bold">{peopleCount} người × {pricePerPerson.toLocaleString('vi-VN')} ₫ = {(peopleCount * pricePerPerson).toLocaleString('vi-VN')} ₫</span>
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-600">
+                <p>Chỉ cần thêm món hàng và lưu báo cáo</p>
+                <p className="text-sm mt-1">Trang tính: <span className="font-semibold">{category}</span></p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Layout 2 cột cho desktop: Danh sách + Tổng kết */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Danh sách món hàng - chiếm 2 cột */}
@@ -209,10 +330,10 @@ export default function Home() {
                 Hành động
               </h3>
               <div className="space-y-3">
-                {/* Dropdown chọn loại báo cáo */}
+                {/* Dropdown chọn loại báo cáo - hiện cho cả 2 chế độ */}
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                    Loại báo cáo
+                    {saveMode === 'new' ? 'Chọn trang tính' : 'Loại báo cáo'}
                   </label>
                   <select
                     id="category"
@@ -220,15 +341,15 @@ export default function Home() {
                     onChange={(e) => handleCategoryChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   >
-                    <option value="Thức ăn">Mua thức ăn</option>
-                    <option value="Đồ dùng">Mua đồ dùng</option>
-                    <option value="Vật liệu">Mua vật liệu khác</option>
-                    <option value="Khác">Khác</option>
+                    <option value="Thức ăn">Thức ăn</option>
+                    <option value="Đồ dùng">Đồ dùng</option>
+                    <option value="Vật liệu">Vật liệu khác</option>
+                    {saveMode === 'old' && <option value="Khác">Khác</option>}
                   </select>
                 </div>
 
-                {/* Input tùy chỉnh khi chọn "Khác" */}
-                {showCustomInput && (
+                {/* Input tùy chỉnh khi chọn "Khác" - chỉ cho chế độ cũ */}
+                {showCustomInput && saveMode === 'old' && (
                   <div>
                     <label htmlFor="customCategory" className="block text-sm font-medium text-gray-700 mb-2">
                       Nhập loại báo cáo
@@ -249,6 +370,10 @@ export default function Home() {
                   category={getCurrentCategory()}
                   isEditMode={isEditMode}
                   originalReport={editingReport}
+                  saveMode={saveMode}
+                  mealTime={mealTime}
+                  peopleCount={peopleCount}
+                  pricePerPerson={pricePerPerson}
                   onSaveSuccess={handleSaveSuccess}
                   onSaveError={handleSaveError}
                 />
