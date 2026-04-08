@@ -40,8 +40,15 @@ export default function Home() {
   
   // State cho form báo cáo mới
   const [mealTime, setMealTime] = useState<'Sáng' | 'Trưa' | 'Chiều'>('Trưa');
-  const [peopleCount, setPeopleCount] = useState<number>(1);
-  const [pricePerPerson, setPricePerPerson] = useState<number>(0);
+  const [peopleCount, setPeopleCount] = useState<number>(0);
+  const [pricePerPerson, setPricePerPerson] = useState<number>(28800);
+
+  // Giá mặc định theo buổi (có thể chỉnh sửa)
+  const [mealPrices, setMealPrices] = useState({
+    'Sáng': 14400,
+    'Trưa': 28800,
+    'Chiều': 28800,
+  });
 
   /**
    * Xử lý thay đổi category
@@ -242,15 +249,18 @@ export default function Home() {
             {category === 'Thức ăn' ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Buổi */}
-                  <div>
+                  {/* Buổi */}                  <div>
                     <label htmlFor="mealTime" className="block text-sm font-medium text-gray-700 mb-2">
                       Buổi
                     </label>
                     <select
                       id="mealTime"
                       value={mealTime}
-                      onChange={(e) => setMealTime(e.target.value as 'Sáng' | 'Trưa' | 'Chiều')}
+                      onChange={(e) => {
+                        const selected = e.target.value as 'Sáng' | 'Trưa' | 'Chiều';
+                        setMealTime(selected);
+                        setPricePerPerson(mealPrices[selected]);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     >
                       <option value="Sáng">Sáng</option>

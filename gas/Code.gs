@@ -615,10 +615,28 @@ function createConsolidatedReport(data) {
     const timestamp = new Date(data.timestamp);
     const dateStr = formatDateTime(timestamp);
     
-    // Tạo danh sách tên hàng hóa
-    const itemsList = data.items.map((item, index) => 
-      (index + 1) + '. ' + item.name + ' (' + formatCurrency(item.price) + ')'
-    ).join(', ');
+    // Tạo RichText với số thứ tự được bôi đen
+    function buildItemsRichText(items) {
+      var fullText = items.map(function(item, index) {
+        return (index + 1) + '. ' + item.name + ' (' + formatCurrency(item.price) + ')';
+      }).join(', ');
+      
+      var builder = SpreadsheetApp.newRichTextValue().setText(fullText);
+      var boldStyle = SpreadsheetApp.newTextStyle().setBold(true).build();
+      
+      var pos = 0;
+      items.forEach(function(item, index) {
+        var numStr = (index + 1) + '.';
+        builder.setTextStyle(pos, pos + numStr.length, boldStyle);
+        var segment = numStr + ' ' + item.name + ' (' + formatCurrency(item.price) + ')';
+        pos += segment.length;
+        if (index < items.length - 1) pos += 2; // ', '
+      });
+      
+      return builder.build();
+    }
+    
+    const itemsRichText = buildItemsRichText(data.items);
     
     // Tính toán các giá trị
     const totalAmount = data.totalAmount;
@@ -637,7 +655,7 @@ function createConsolidatedReport(data) {
       sheet.getRange(nextRow, 4).setValue(data.mealTime || 'Trưa'); // Buổi
       sheet.getRange(nextRow, 5).setValue(data.peopleCount || 0); // Số lượng người
       sheet.getRange(nextRow, 6).setValue(data.pricePerPerson || 0); // Giá tiền chi cho mỗi người
-      sheet.getRange(nextRow, 7).setValue(itemsList); // Tên hàng hóa
+      sheet.getRange(nextRow, 7).setRichTextValue(itemsRichText); // Tên hàng hóa
       sheet.getRange(nextRow, 8).setValue(totalAmount); // Thành tiền (tổng tiền mua thực tế)
       sheet.getRange(nextRow, 9).setValue(expectedTotal); // Tổng tiền mua (SL người * giá chi mỗi người)
       sheet.getRange(nextRow, 10).setValue(difference); // Tiền dư/thiếu
@@ -665,7 +683,7 @@ function createConsolidatedReport(data) {
       sheet.getRange(nextRow, 1).setValue(stt); // STT
       sheet.getRange(nextRow, 2).setValue(dateStr); // Ngày mua
       sheet.getRange(nextRow, 3).setValue(data.userName); // Người mua
-      sheet.getRange(nextRow, 4).setValue(itemsList); // Tên hàng hóa
+      sheet.getRange(nextRow, 4).setRichTextValue(itemsRichText); // Tên hàng hóa
       sheet.getRange(nextRow, 5).setValue(totalAmount); // Thành tiền
       sheet.getRange(nextRow, 6).setValue(''); // Ghi chú (để trống)
       
