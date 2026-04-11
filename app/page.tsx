@@ -36,7 +36,8 @@ export default function Home() {
   const [editingReport, setEditingReport] = useState<any>(null);
   
   // State cho chế độ lưu báo cáo (cũ/mới)
-  const [saveMode, setSaveMode] = useState<'old' | 'new'>('old');
+  const [saveMode, setSaveMode] = useState<'old' | 'new'>('new');
+  const [showSaveModeToggle, setShowSaveModeToggle] = useState(false);
   
   // State cho form báo cáo mới
   const [mealTime, setMealTime] = useState<'Sáng' | 'Trưa' | 'Chiều'>('Trưa');
@@ -177,37 +178,52 @@ export default function Home() {
 
         {/* Toggle chọn chế độ lưu báo cáo */}
         <div className="mb-6 bg-white rounded-lg shadow-md p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Chế độ lưu báo cáo
-          </label>
-          <div className="flex gap-4">
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Chế độ lưu báo cáo
+            </label>
             <button
-              onClick={() => setSaveMode('old')}
-              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
-                saveMode === 'old'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              onClick={() => setShowSaveModeToggle(!showSaveModeToggle)}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
             >
-              <div className="text-left">
-                <div className="font-semibold">Báo cáo riêng lẻ</div>
-                <div className="text-xs opacity-80">Tạo file mới mỗi báo cáo</div>
-              </div>
-            </button>
-            <button
-              onClick={() => setSaveMode('new')}
-              className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
-                saveMode === 'new'
-                  ? 'bg-green-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <div className="text-left">
-                <div className="font-semibold">Báo cáo tổng hợp</div>
-                <div className="text-xs opacity-80">Lưu vào file chung</div>
-              </div>
+              {showSaveModeToggle ? 'Ẩn' : 'Thay đổi chế độ'}
             </button>
           </div>
+
+          {!showSaveModeToggle ? (
+            <p className="text-sm text-green-700 font-medium">
+              Đang dùng: Báo cáo tổng hợp
+            </p>
+          ) : (
+            <div className="flex gap-4 mt-3">
+              <button
+                onClick={() => setSaveMode('old')}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                  saveMode === 'old'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Báo cáo riêng lẻ</div>
+                  <div className="text-xs opacity-80">Tạo file mới mỗi báo cáo</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setSaveMode('new')}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                  saveMode === 'new'
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="text-left">
+                  <div className="font-semibold">Báo cáo tổng hợp</div>
+                  <div className="text-xs opacity-80">Lưu vào file chung</div>
+                </div>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Thông báo chế độ chỉnh sửa */}
