@@ -17,6 +17,8 @@ export default function SaveButton({
   mealTime,
   peopleCount,
   pricePerPerson,
+  isHoliday = false,
+  customDate,
   onSaveSuccess, 
   onSaveError 
 }: SaveButtonProps) {
@@ -63,7 +65,11 @@ export default function SaveButton({
       const reportData = {
         userName,
         items,
-        timestamp: isEditMode && originalReport ? originalReport.timestamp : new Date().toISOString(),
+        timestamp: isEditMode && originalReport 
+          ? originalReport.timestamp 
+          : customDate 
+            ? new Date(customDate).toISOString() 
+            : new Date().toISOString(),
         totalAmount,
         category: category || (isEditMode && originalReport ? originalReport.category : 'Mua sắm'),
         saveMode, // Thêm saveMode
@@ -71,9 +77,9 @@ export default function SaveButton({
         ...(saveMode === 'new' && {
           mealTime,
           peopleCount: peopleCount || 0,
-          pricePerPerson: pricePerPerson || 0,
-          expectedTotal: (peopleCount || 0) * (pricePerPerson || 0),
-          difference: ((peopleCount || 0) * (pricePerPerson || 0)) - totalAmount,
+          pricePerPerson: (pricePerPerson || 0) * (isHoliday ? 2 : 1),
+          expectedTotal: (peopleCount || 0) * (pricePerPerson || 0) * (isHoliday ? 2 : 1),
+          difference: ((peopleCount || 0) * (pricePerPerson || 0) * (isHoliday ? 2 : 1)) - totalAmount,
         }),
       };
 

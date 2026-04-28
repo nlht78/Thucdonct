@@ -227,6 +227,10 @@ export interface SaveButtonProps {
   peopleCount?: number;
   /** Giá tiền chi cho mỗi người (cho báo cáo mới) */
   pricePerPerson?: number;
+  /** Ngày lễ: nhân đôi giá/người */
+  isHoliday?: boolean;
+  /** Ngày tùy chỉnh để lưu báo cáo (thay cho ngày hiện tại) */
+  customDate?: string;
   /** Callback khi lưu thành công */
   onSaveSuccess: () => void;
   /** Callback khi lưu thất bại */

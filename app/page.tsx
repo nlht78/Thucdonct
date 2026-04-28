@@ -44,6 +44,13 @@ export default function Home() {
   const [peopleCount, setPeopleCount] = useState<number>(0);
   const [pricePerPerson, setPricePerPerson] = useState<number>(28800);
 
+  // State cho lưu theo ngày
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [customDate, setCustomDate] = useState<string>('');
+
+  // State cho ngày lễ (nhân đôi giá/người)
+  const [isHoliday, setIsHoliday] = useState(false);
+
   // Giá mặc định theo buổi (có thể chỉnh sửa)
   const [mealPrices, setMealPrices] = useState({
     'Sáng': 14400,
@@ -319,23 +326,45 @@ export default function Home() {
                     <label htmlFor="pricePerPerson" className="block text-sm font-medium text-gray-700 mb-2">
                       Giá/người (₫)
                     </label>
-                    <input
-                      id="pricePerPerson"
-                      type="number"
-                      min="0"
-                      value={pricePerPerson}
-                      onChange={(e) => setPricePerPerson(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      placeholder="VD: 30000"
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        id="pricePerPerson"
+                        type="number"
+                        min="0"
+                        value={pricePerPerson}
+                        onChange={(e) => setPricePerPerson(parseInt(e.target.value) || 0)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        placeholder="VD: 30000"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsHoliday(!isHoliday)}
+                        title="Ngày lễ: nhân đôi giá/người"
+                        className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                          isHoliday
+                            ? 'bg-red-500 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        🎉
+                      </button>
+                    </div>
+                    {isHoliday && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Ngày lễ: {pricePerPerson.toLocaleString('vi-VN')} × 2 = <span className="font-bold">{(pricePerPerson * 2).toLocaleString('vi-VN')} ₫/người</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Hiển thị tổng tiền dự kiến */}
                 {peopleCount > 0 && pricePerPerson > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      Tổng tiền dự kiến: <span className="font-bold">{peopleCount} người × {pricePerPerson.toLocaleString('vi-VN')} ₫ = {(peopleCount * pricePerPerson).toLocaleString('vi-VN')} ₫</span>
+                  <div className={`mt-4 p-3 rounded-lg ${isHoliday ? 'bg-red-50' : 'bg-blue-50'}`}>
+                    <p className={`text-sm ${isHoliday ? 'text-red-800' : 'text-blue-800'}`}>
+                      {isHoliday && <span className="font-semibold">🎉 Ngày lễ · </span>}
+                      Tổng tiền dự kiến: <span className="font-bold">
+                        {peopleCount} người × {(pricePerPerson * (isHoliday ? 2 : 1)).toLocaleString('vi-VN')} ₫ = {(peopleCount * pricePerPerson * (isHoliday ? 2 : 1)).toLocaleString('vi-VN')} ₫
+                      </span>
                     </p>
                   </div>
                 )}
@@ -414,9 +443,40 @@ export default function Home() {
                   mealTime={mealTime}
                   peopleCount={peopleCount}
                   pricePerPerson={pricePerPerson}
+                  isHoliday={isHoliday}
+                  customDate={customDate || undefined}
                   onSaveSuccess={handleSaveSuccess}
                   onSaveError={handleSaveError}
                 />
+
+                {/* Nút lưu theo ngày */}
+                <div>
+                  <button
+                    onClick={() => setShowDatePicker(!showDatePicker)}
+                    className="w-full px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {showDatePicker ? 'Ẩn chọn ngày' : 'Lưu theo ngày'}
+                  </button>
+                  {showDatePicker && (
+                    <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <label className="block text-xs text-gray-500 mb-1">Chọn ngày lưu thực đơn</label>
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      {customDate && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Sẽ lưu với ngày: {new Date(customDate).toLocaleDateString('vi-VN')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
                 
                 {/* Nút xem lịch sử */}
                 <SavedReports onEditReport={handleEditReport} />
